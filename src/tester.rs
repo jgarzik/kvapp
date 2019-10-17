@@ -1,4 +1,3 @@
-
 /*
  * tester: Integration tester for kvapp
  *
@@ -13,7 +12,7 @@ const T_ENDPOINT: &'static str = "http://127.0.0.1:8080";
 const T_BASEURI: &'static str = "/api/db/";
 const T_VALUE: &'static str = "helloworld";
 
-use reqwest::{Client,StatusCode};
+use reqwest::{Client, StatusCode};
 
 fn post_get_put_get() {
     let basepath = format!("{}{}", T_ENDPOINT, T_BASEURI);
@@ -25,23 +24,21 @@ fn post_get_put_get() {
     let resp_res = client.get(&url).send();
     match resp_res {
         Ok(resp) => assert_eq!(resp.status(), StatusCode::NOT_FOUND),
-        Err(_e) => assert!(false)
+        Err(_e) => assert!(false),
     }
 
     // verify DELETE(non exist) returns not-found
     let resp_res = client.delete(&url).send();
     match resp_res {
         Ok(resp) => assert_eq!(resp.status(), StatusCode::NOT_FOUND),
-        Err(_e) => assert!(false)
+        Err(_e) => assert!(false),
     }
 
     // PUT a new record
-    let resp_res = client.put(&url)
-        .body(T_VALUE)
-        .send();
+    let resp_res = client.put(&url).body(T_VALUE).send();
     match resp_res {
         Ok(resp) => assert_eq!(resp.status(), StatusCode::OK),
-        Err(_e) => assert!(false)
+        Err(_e) => assert!(false),
     }
 
     // Check that the record exists with the correct contents.
@@ -52,31 +49,31 @@ fn post_get_put_get() {
 
             match resp.text() {
                 Ok(body) => assert_eq!(body, T_VALUE),
-                Err(_e) => assert!(false)
+                Err(_e) => assert!(false),
             }
         }
-        Err(_e) => assert!(false)
+        Err(_e) => assert!(false),
     }
 
     // DELETE record
     let resp_res = client.delete(&url).send();
     match resp_res {
         Ok(resp) => assert_eq!(resp.status(), StatusCode::OK),
-        Err(_e) => assert!(false)
+        Err(_e) => assert!(false),
     }
 
     // Check (again) that a record with key 1 doesn't exist.
     let resp_res = client.get(&url).send();
     match resp_res {
         Ok(resp) => assert_eq!(resp.status(), StatusCode::NOT_FOUND),
-        Err(_e) => assert!(false)
+        Err(_e) => assert!(false),
     }
 
     // verify (again) DELETE(non exist) returns not-found
     let resp_res = client.delete(&url).send();
     match resp_res {
         Ok(resp) => assert_eq!(resp.status(), StatusCode::NOT_FOUND),
-        Err(_e) => assert!(false)
+        Err(_e) => assert!(false),
     }
 }
 
@@ -84,4 +81,3 @@ fn main() {
     post_get_put_get();
     println!("Integration testing successful.");
 }
-
