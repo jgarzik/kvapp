@@ -18,8 +18,7 @@ Simple database service for NoSQL key/value database
 
 ## Motivation
 
-A simple REST/JSON API web service, that demonstrates rust, web services,
-and persistent state storage in a database.
+Create a simple fork-and-go Rust template for a multi-threaded HTTP REST microservice, that is fully wired for familiar production artifacts such as Travis testing and docker container builds.
 
 ## Using kvapp
 
