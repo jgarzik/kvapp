@@ -11,10 +11,10 @@ const DEF_BIND_ADDR: &'static str = "127.0.0.1";
 const DEF_BIND_PORT: &'static str = "8080";
 
 use std::sync::{Arc, Mutex};
-use std::{env, fs, io};
+use std::{env, fs};
 
 use actix_web::http::StatusCode;
-use actix_web::{guard, middleware, web, App, HttpRequest, HttpResponse, HttpServer, Result};
+use actix_web::{middleware, web, App, HttpRequest, HttpResponse, HttpServer};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sled::{ConfigBuilder, Db};
@@ -36,8 +36,8 @@ struct ServerState {
 }
 
 // helper function, 404 not found
-fn err_not_found() -> Result<HttpResponse> {
-    Ok(HttpResponse::build(StatusCode::NOT_FOUND)
+fn err_not_found() -> HttpResponse {
+    HttpResponse::build(StatusCode::NOT_FOUND)
         .content_type("application/json")
         .body(
             json!({
@@ -45,12 +45,12 @@ fn err_not_found() -> Result<HttpResponse> {
              "code" : -404,
               "message": "not found"}})
             .to_string(),
-        ))
+        )
 }
 
 // helper function, server error
-fn err_500() -> Result<HttpResponse> {
-    Ok(HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
+fn err_500() -> HttpResponse {
+    HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
         .content_type("application/json")
         .body(
             json!({
@@ -58,31 +58,26 @@ fn err_500() -> Result<HttpResponse> {
              "code" : -500,
               "message": "internal server error"}})
             .to_string(),
-        ))
+        )
 }
 
 // helper function, success + binary response
-fn ok_binary(val: Vec<u8>) -> Result<HttpResponse> {
-    Ok(HttpResponse::build(StatusCode::OK)
+fn ok_binary(val: Vec<u8>) -> HttpResponse {
+    HttpResponse::Ok()
         .content_type("application/octet-stream")
-        .body(val))
+        .body(val)
 }
 
 // helper function, success + json response
-fn ok_json(jval: serde_json::Value) -> Result<HttpResponse> {
-    Ok(HttpResponse::build(StatusCode::OK)
+fn ok_json(jval: serde_json::Value) -> HttpResponse {
+    HttpResponse::Ok()
         .content_type("application/json")
-        .body(jval.to_string()))
+        .body(jval.to_string())
 }
 
 /// simple root index handler, describes our service
 #[get("/")]
-fn req_index(
-    m_state: web::Data<Arc<Mutex<ServerState>>>,
-    req: HttpRequest,
-) -> Result<HttpResponse> {
-    println!("{:?}", req);
-
+async fn req_index(m_state: web::Data<Arc<Mutex<ServerState>>>) -> HttpResponse {
     let state = m_state.lock().unwrap();
 
     ok_json(json!({
@@ -95,11 +90,11 @@ fn req_index(
 }
 
 /// DELETE data item.  key in URI path.  returned ok as json response
-fn req_delete(
+async fn req_delete(
     m_state: web::Data<Arc<Mutex<ServerState>>>,
     req: HttpRequest,
     path: web::Path<(String, String)>,
-) -> Result<HttpResponse> {
+) -> HttpResponse {
     println!("{:?}", req);
 
     let state = m_state.lock().unwrap();
@@ -119,11 +114,11 @@ fn req_delete(
 }
 
 /// GET data item.  key in URI path.  returned value as json response
-fn req_get(
+async fn req_get(
     m_state: web::Data<Arc<Mutex<ServerState>>>,
     req: HttpRequest,
     path: web::Path<(String, String)>,
-) -> Result<HttpResponse> {
+) -> HttpResponse {
     println!("{:?}", req);
 
     let state = m_state.lock().unwrap();
@@ -143,11 +138,11 @@ fn req_get(
 }
 
 /// PUT data item.  key and value both in URI path.
-fn req_put(
+async fn req_put(
     m_state: web::Data<Arc<Mutex<ServerState>>>,
     req: HttpRequest,
     (path, body): (web::Path<(String, String)>, web::Bytes),
-) -> Result<HttpResponse> {
+) -> HttpResponse {
     println!("{:?}", req);
 
     let state = m_state.lock().unwrap();
@@ -163,12 +158,8 @@ fn req_put(
     }
 }
 
-/// 404 handler
-fn p404() -> Result<HttpResponse> {
-    err_not_found()
-}
-
-fn main() -> io::Result<()> {
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
     env::set_var("RUST_LOG", "actix_web=debug");
     env_logger::init();
 
@@ -245,14 +236,13 @@ fn main() -> io::Result<()> {
     }));
 
     // configure web server
-    let sys = actix_rt::System::new(APPNAME);
-
+    println!("Starting http server: {}", bind_pair);
     HttpServer::new(move || {
         App::new()
             // pass application state to each handler
-            .data(Arc::clone(&srv_state))
+            .app_data(web::Data::new(Arc::clone(&srv_state)))
             // apply default headers
-            .wrap(middleware::DefaultHeaders::new().header("Server", server_hdr.to_string()))
+            .wrap(middleware::DefaultHeaders::new().add(("Server", server_hdr.to_string())))
             // enable logger - always register actix-web Logger middleware last
             .wrap(middleware::Logger::default())
             // register our routes
@@ -263,22 +253,8 @@ fn main() -> io::Result<()> {
                     .route(web::put().to(req_put))
                     .route(web::delete().to(req_delete)),
             )
-            // default
-            .default_service(
-                // 404 for GET request
-                web::resource("")
-                    .route(web::get().to(p404))
-                    // all requests that are not `GET` -- redundant?
-                    .route(
-                        web::route()
-                            .guard(guard::Not(guard::Get()))
-                            .to(HttpResponse::MethodNotAllowed),
-                    ),
-            )
     })
     .bind(bind_pair.to_string())?
-    .start();
-
-    println!("Starting http server: {}", bind_pair);
-    sys.run()
+    .run()
+    .await
 }
