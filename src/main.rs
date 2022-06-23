@@ -14,7 +14,7 @@ use std::sync::{Arc, Mutex};
 use std::{env, fs};
 
 use actix_web::http::StatusCode;
-use actix_web::{middleware, web, App, HttpRequest, HttpResponse, HttpServer};
+use actix_web::{middleware, web, App, HttpResponse, HttpServer};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sled::{ConfigBuilder, Db};
@@ -92,11 +92,8 @@ async fn req_index(m_state: web::Data<Arc<Mutex<ServerState>>>) -> HttpResponse 
 /// DELETE data item.  key in URI path.  returned ok as json response
 async fn req_delete(
     m_state: web::Data<Arc<Mutex<ServerState>>>,
-    req: HttpRequest,
     path: web::Path<(String, String)>,
 ) -> HttpResponse {
-    println!("{:?}", req);
-
     let state = m_state.lock().unwrap();
 
     // we only support 1 db, for now...  user must specify db name
@@ -116,11 +113,8 @@ async fn req_delete(
 /// GET data item.  key in URI path.  returned value as json response
 async fn req_get(
     m_state: web::Data<Arc<Mutex<ServerState>>>,
-    req: HttpRequest,
     path: web::Path<(String, String)>,
 ) -> HttpResponse {
-    println!("{:?}", req);
-
     let state = m_state.lock().unwrap();
 
     // we only support 1 db, for now...  user must specify db name
@@ -140,11 +134,8 @@ async fn req_get(
 /// PUT data item.  key and value both in URI path.
 async fn req_put(
     m_state: web::Data<Arc<Mutex<ServerState>>>,
-    req: HttpRequest,
     (path, body): (web::Path<(String, String)>, web::Bytes),
 ) -> HttpResponse {
-    println!("{:?}", req);
-
     let state = m_state.lock().unwrap();
 
     // we only support 1 db, for now...  user must specify db name
