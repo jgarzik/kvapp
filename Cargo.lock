@@ -1079,13 +1079,12 @@ dependencies = [
 
 [[package]]
 name = "kvapp"
-version = "1.0.0"
+version = "1.2.0"
 dependencies = [
  "actix-web",
  "bytes 0.4.12",
  "clap",
  "env_logger",
- "futures",
  "reqwest",
  "serde",
  "serde_derive",
