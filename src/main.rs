@@ -155,39 +155,33 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     // parse command line
-    let cli_matches = clap::App::new(APPNAME)
+    let cli_matches = clap::Command::new(APPNAME)
+        .about("Database server for key/value db")
         .version(VERSION)
         .author("Jeff Garzik <jgarzik@pobox.com>")
-        .about("Database server for key/value db")
         .arg(
-            clap::Arg::with_name("config")
-                .short("c")
+            clap::Arg::new("config")
+                .short('c')
                 .long("config")
+                .help("Sets a custom configuration file")
+                .default_value(DEF_CFG_FN)
                 .value_name("JSON-FILE")
-                .help(&format!(
-                    "Sets a custom configuration file (default: {})",
-                    DEF_CFG_FN
-                ))
                 .takes_value(true),
         )
         .arg(
-            clap::Arg::with_name("bind-addr")
+            clap::Arg::new("bind-addr")
                 .long("bind-addr")
+                .help("Custom server socket bind address")
+                .default_value(DEF_BIND_ADDR)
                 .value_name("IP-ADDRESS")
-                .help(&format!(
-                    "Custom server socket bind address (default: {})",
-                    DEF_BIND_ADDR
-                ))
                 .takes_value(true),
         )
         .arg(
-            clap::Arg::with_name("bind-port")
+            clap::Arg::new("bind-port")
                 .long("bind-port")
+                .help("Custom server socket bind port")
+                .default_value(DEF_BIND_PORT)
                 .value_name("PORT")
-                .help(&format!(
-                    "Custom server socket bind port (default: {})",
-                    DEF_BIND_PORT
-                ))
                 .takes_value(true),
         )
         .get_matches();
