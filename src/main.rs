@@ -15,9 +15,9 @@ use std::{env, fs};
 
 use actix_web::http::StatusCode;
 use actix_web::{middleware, web, App, HttpResponse, HttpServer};
-use serde::{Deserialize, Serialize};
+use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
-use sled::{ConfigBuilder, Db};
+use sled::Db;
 
 #[derive(Serialize, Deserialize)]
 struct DbConfig {
@@ -215,11 +215,8 @@ async fn main() -> std::io::Result<()> {
     }
 
     // configure & open db
-    let db_config = ConfigBuilder::new()
-        .path(db_path)
-        .use_compression(false)
-        .build();
-    let db = Db::start(db_config).unwrap();
+    let db_config = sled::Config::default().path(db_path).use_compression(false);
+    let db = db_config.open().unwrap();
 
     let srv_state = Arc::new(Mutex::new(ServerState {
         name: db_name.clone(),
