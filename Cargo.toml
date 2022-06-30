@@ -1,6 +1,6 @@
 [package]
 name = "kvapp"
-version = "1.2.0"
+version = "1.2.1"
 authors = ["jgarzik"]
 edition = "2018"
 publish = false
