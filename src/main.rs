@@ -15,8 +15,6 @@ extern crate clap;
 const APPNAME: &'static str = "kvapp";
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 const DEF_CFG_FN: &'static str = "cfg-kvapp.json";
-const DEF_DB_NAME: &'static str = "db";
-const DEF_DB_DIR: &'static str = "db.kv";
 const DEF_BIND_ADDR: &'static str = "127.0.0.1";
 const DEF_BIND_PORT: &'static str = "8080";
 
@@ -46,12 +44,14 @@ struct Args {
     port: u16,
 }
 
+// JSON db configuration file: database sub-section
 #[derive(Serialize, Deserialize)]
 struct DbConfig {
-    name: String,
-    path: String,
+    name: String, // database short nickname (exposed via JSON HTTP API)
+    path: String, // sled database file path
 }
 
+// JSON db configuration file: top level
 #[derive(Serialize, Deserialize)]
 struct ServerConfig {
     database: DbConfig,
@@ -188,23 +188,14 @@ async fn main() -> std::io::Result<()> {
     let cfg_text = fs::read_to_string(args.config)?;
     let server_cfg: ServerConfig = serde_json::from_str(&cfg_text)?;
 
-    // special case, until we have multiple dbs: find first db config, use it
-    let db_name;
-    let db_path;
-    if server_cfg.database.name.is_empty() {
-        db_name = String::from(DEF_DB_NAME);
-        db_path = String::from(DEF_DB_DIR);
-    } else {
-        db_name = server_cfg.database.name.clone();
-        db_path = server_cfg.database.path.clone();
-    }
-
     // configure & open db
-    let db_config = sled::Config::default().path(db_path).use_compression(false);
+    let db_config = sled::Config::default()
+        .path(&server_cfg.database.path)
+        .use_compression(false);
     let db = db_config.open().unwrap();
 
     let srv_state = Arc::new(Mutex::new(ServerState {
-        name: db_name.clone(),
+        name: server_cfg.database.name.clone(),
         db: db.clone(),
     }));
 
