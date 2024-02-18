@@ -54,7 +54,7 @@ struct DbConfig {
 
 #[derive(Serialize, Deserialize)]
 struct ServerConfig {
-    databases: Vec<DbConfig>,
+    database: DbConfig,
 }
 
 struct ServerState {
@@ -110,9 +110,9 @@ async fn req_index(m_state: web::Data<Arc<Mutex<ServerState>>>) -> HttpResponse 
     ok_json(json!({
         "name": APPNAME,
         "version": VERSION,
-        "databases": [
-            { "name": state.name }
-        ]
+        "database_info": {
+            "name": state.name
+        }
     }))
 }
 
@@ -130,16 +130,11 @@ async fn req_health(m_state: web::Data<Arc<Mutex<ServerState>>>) -> HttpResponse
 /// DELETE data item.  key in URI path.  returned ok as json response
 async fn req_delete(
     m_state: web::Data<Arc<Mutex<ServerState>>>,
-    path: web::Path<(String, String)>,
+    path: web::Path<String>,
 ) -> HttpResponse {
     let state = m_state.lock().unwrap();
 
-    // we only support 1 db, for now...  user must specify db name
-    if state.name != path.0 {
-        return err_not_found();
-    }
-
-    match state.db.remove(path.1.clone()) {
+    match state.db.remove(path.clone()) {
         Ok(optval) => match optval {
             Some(_val) => ok_json(json!({"result": true})),
             None => err_not_found(), // db: value not found
@@ -151,16 +146,11 @@ async fn req_delete(
 /// GET data item.  key in URI path.  returned value as json response
 async fn req_get(
     m_state: web::Data<Arc<Mutex<ServerState>>>,
-    path: web::Path<(String, String)>,
+    path: web::Path<String>,
 ) -> HttpResponse {
     let state = m_state.lock().unwrap();
 
-    // we only support 1 db, for now...  user must specify db name
-    if state.name != path.0 {
-        return err_not_found();
-    }
-
-    match state.db.get(path.1.clone()) {
+    match state.db.get(path.clone()) {
         Ok(optval) => match optval {
             Some(val) => ok_binary(val.to_vec()),
             None => err_not_found(), // db: value not found
@@ -172,16 +162,11 @@ async fn req_get(
 /// PUT data item.  key and value both in URI path.
 async fn req_put(
     m_state: web::Data<Arc<Mutex<ServerState>>>,
-    (path, body): (web::Path<(String, String)>, web::Bytes),
+    (path, body): (web::Path<String>, web::Bytes),
 ) -> HttpResponse {
     let state = m_state.lock().unwrap();
 
-    // we only support 1 db, for now...  user must specify db name
-    if state.name != path.0 {
-        return err_not_found();
-    }
-
-    match state.db.insert(path.1.as_str(), body.to_vec()) {
+    match state.db.insert(path.as_str(), body.to_vec()) {
         Ok(_optval) => ok_json(json!({"result": true})),
         Err(_e) => err_500(), // db: error
     }
@@ -206,12 +191,12 @@ async fn main() -> std::io::Result<()> {
     // special case, until we have multiple dbs: find first db config, use it
     let db_name;
     let db_path;
-    if server_cfg.databases.len() == 0 {
+    if server_cfg.database.name.is_empty() {
         db_name = String::from(DEF_DB_NAME);
         db_path = String::from(DEF_DB_DIR);
     } else {
-        db_name = server_cfg.databases[0].name.clone();
-        db_path = server_cfg.databases[0].path.clone();
+        db_name = server_cfg.database.name.clone();
+        db_path = server_cfg.database.path.clone();
     }
 
     // configure & open db
@@ -237,7 +222,7 @@ async fn main() -> std::io::Result<()> {
             .service(req_index)
             .service(req_health)
             .service(
-                web::resource("/api/{db}/{key}")
+                web::resource("/api/{key}")
                     .route(web::get().to(req_get))
                     .route(web::put().to(req_put))
                     .route(web::delete().to(req_delete)),
