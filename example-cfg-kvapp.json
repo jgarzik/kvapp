@@ -1,8 +1,6 @@
 {
-	"databases": [
-		{
-			"name": "db",
-			"path": "db.kv"
-		}
-	]
+	"database": {
+		"name": "db",
+		"path": "db.kv"
+	}
 }

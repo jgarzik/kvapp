@@ -72,6 +72,20 @@ async fn test_kvapp_integration() {
     let client = reqwest::Client::new();
 
     // ----------------------------------------------------------------
+    // Test: index
+    let res = client
+        .get("http://localhost:8080/")
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    assert!(res.status().is_success(), "Request did not succeed");
+
+    // Deserialize the response body to a JSON Value and assert "healthy" is true.
+    let json: Value = res.json().await.expect("Failed to deserialize JSON");
+    assert_eq!(json["name"], "kvapp");
+
+    // ----------------------------------------------------------------
     // Test: health check
     let res = client
         .get("http://localhost:8080/health")
@@ -87,7 +101,7 @@ async fn test_kvapp_integration() {
 
     // ----------------------------------------------------------------
     // Test: Get non-existent object returns not-found
-    let url = "http://localhost:8080/api/db/1";
+    let url = "http://localhost:8080/api/1";
     let res = client
         .get(url)
         .send()
