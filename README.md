@@ -18,14 +18,16 @@ Simple database service for NoSQL key/value database
 
 ## Motivation
 
-Create a simple fork-and-go Rust template for a multi-threaded HTTP REST microservice, that is fully wired for familiar production artifacts such as Github Actions testing and docker container builds.
+Create a simple fork-and-go Rust template for a multi-threaded HTTP REST
+microservice, that is fully wired for familiar production artifacts such
+as Github Actions testing and docker container builds.
 
 ## Using kvapp
 
-Standard rust cargo multi-binary setup:
+Standard rust cargo binary setup:
 ```
 $ cargo build
-$ cargo run --bin kvapp
+$ cargo run
 ```
 
 ## Server configuration
@@ -55,7 +57,7 @@ Also, limited options are available at the command line.  Run `--help`
 to view available options:
 
 ```
-$ cargo run --bin kvapp -- --help
+$ cargo run -- --help
 ```
 
 ## Server API
@@ -131,8 +133,8 @@ Returns JSON describing value found and removed (if in db):
 
 ## Testing
 
-Integration testing is performed via a separate binary, `tester`.
+End-to-end integration testing is performed in the usual cargo way:
 ```
-$ cargo run --bin tester
+$ cargo test
 ```
 
