@@ -1,9 +1,23 @@
+//
+// tests/integration.rs -- basic API end-to-end integration testing
+//
+// Copyright (c) 2024 Jeff Garzik
+//
+// This file is part of the pcgtoolssoftware project covered under
+// the MIT License.  For the full license text, please see the LICENSE
+// file in the root directory of this project.
+// SPDX-License-Identifier: MIT
+
+use serde_json::Value;
 use std::env;
 use std::fs;
 use std::path::Path;
 use std::process::{Child, Command};
 use std::thread;
 use std::time::Duration;
+
+const DEF_START_WAIT: u64 = 4;
+const T_VALUE: &'static str = "helloworld";
 
 // A utility function to prepare the environment before starting the server.
 fn prepare_environment() {
@@ -16,8 +30,7 @@ fn prepare_environment() {
     let config_dest_path = Path::new("cfg-kvapp.json");
 
     // Copy the configuration file to the current directory.
-    fs::copy(config_src_path, config_dest_path)
-        .expect("Failed to copy configuration file");
+    fs::copy(config_src_path, config_dest_path).expect("Failed to copy configuration file");
 
     // Create the db.kv directory if it does not exist.
     let db_dir = Path::new("db.kv");
@@ -36,7 +49,7 @@ fn start_kvapp_server() -> Child {
         .expect("Failed to start kvapp server");
 
     // Give the server some time to start up.
-    thread::sleep(Duration::from_secs(5));
+    thread::sleep(Duration::from_secs(DEF_START_WAIT));
 
     child
 }
@@ -55,9 +68,11 @@ async fn test_kvapp_integration() {
     // Start the server in the background.
     let server_process = start_kvapp_server();
 
-    // Perform your test logic here.
-    // Example: Issue an HTTP GET request to the server.
+    // Create HTTP client
     let client = reqwest::Client::new();
+
+    // ----------------------------------------------------------------
+    // Test: health check
     let res = client
         .get("http://localhost:8080/health")
         .send()
@@ -66,7 +81,85 @@ async fn test_kvapp_integration() {
 
     assert!(res.status().is_success(), "Request did not succeed");
 
-    // Additional assertions can be made here based on the response.
+    // Deserialize the response body to a JSON Value and assert "healthy" is true.
+    let json: Value = res.json().await.expect("Failed to deserialize JSON");
+    assert_eq!(json["healthy"], true, "Server is not healthy");
+
+    // ----------------------------------------------------------------
+    // Test: Get non-existent object returns not-found
+    let url = "http://localhost:8080/api/db/1";
+    let res = client
+        .get(url)
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    assert_eq!(res.status(), reqwest::StatusCode::NOT_FOUND);
+
+    // ----------------------------------------------------------------
+    // Test: Delete non-existent object returns not-found
+    let res = client
+        .delete(url)
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    assert_eq!(res.status(), reqwest::StatusCode::NOT_FOUND);
+
+    // ----------------------------------------------------------------
+    // Test: Put a new object
+    let res = client
+        .put(url)
+        .body(T_VALUE)
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    assert!(res.status().is_success(), "Request did not succeed");
+
+    // ----------------------------------------------------------------
+    // Test: Get just-stored object, validate contents match
+    let res = client
+        .get(url)
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    assert!(res.status().is_success(), "Request did not succeed");
+
+    // Check body text match
+    let body_text = res.text().await.expect("Failed to receive text");
+    assert_eq!(body_text, T_VALUE);
+
+    // ----------------------------------------------------------------
+    // Test: Delete just-stored object
+    let res = client
+        .delete(url)
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    assert!(res.status().is_success(), "Request did not succeed");
+
+    // ----------------------------------------------------------------
+    // Test (again): Get non-existent object returns not-found
+    let res = client
+        .get(url)
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    assert_eq!(res.status(), reqwest::StatusCode::NOT_FOUND);
+
+    // ----------------------------------------------------------------
+    // Test (again): Delete non-existent object returns not-found
+    let res = client
+        .delete(url)
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    assert_eq!(res.status(), reqwest::StatusCode::NOT_FOUND);
 
     // Stop the server.
     stop_kvapp_server(server_process);
