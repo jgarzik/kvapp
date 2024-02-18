@@ -76,6 +76,14 @@ async fn post_get_put_get() -> Result<(), reqwest::Error> {
         Err(_e) => assert!(false),
     }
 
+    // test health check endpoint
+    let health_url = format!("{}/health", T_ENDPOINT);
+    let resp_res = client.get(&health_url).send().await;
+    match resp_res {
+        Ok(resp) => assert_eq!(resp.status(), StatusCode::OK),
+        Err(_e) => assert!(false),
+    }
+
     Ok(())
 }
 

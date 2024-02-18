@@ -89,6 +89,17 @@ async fn req_index(m_state: web::Data<Arc<Mutex<ServerState>>>) -> HttpResponse 
     }))
 }
 
+/// example health check.  pings database by calling a db function..
+#[get("/health")]
+async fn req_health(m_state: web::Data<Arc<Mutex<ServerState>>>) -> HttpResponse {
+    let state = m_state.lock().unwrap();
+
+    match state.db.size_on_disk() {
+        Err(_e) => err_500(),
+        Ok(_size) => ok_json(json!({ "healthy": true, })),
+    }
+}
+
 /// DELETE data item.  key in URI path.  returned ok as json response
 async fn req_delete(
     m_state: web::Data<Arc<Mutex<ServerState>>>,
@@ -229,6 +240,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(middleware::Logger::default())
             // register our routes
             .service(req_index)
+            .service(req_health)
             .service(
                 web::resource("/api/{db}/{key}")
                     .route(web::get().to(req_get))
