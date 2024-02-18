@@ -1,5 +1,5 @@
 # kvapp
-A fully built-in, production-ready skeleton of a Rust microservice API.
+A fully built-out, production-ready skeleton of a Rust microservice API.
 
 The example microservice:  A simple database service for NoSQL key/value database.
 
