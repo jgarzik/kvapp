@@ -1,6 +1,30 @@
+use std::env;
+use std::fs;
+use std::path::Path;
 use std::process::{Child, Command};
 use std::thread;
 use std::time::Duration;
+
+// A utility function to prepare the environment before starting the server.
+fn prepare_environment() {
+    // Use CARGO_MANIFEST_DIR to get the path to the source directory
+    let cargo_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+
+    // Construct the source path for the configuration file
+    let config_src_path = Path::new(&cargo_dir).join("example-cfg-kvapp.json");
+    // Define the destination path for the configuration file
+    let config_dest_path = Path::new("cfg-kvapp.json");
+
+    // Copy the configuration file to the current directory.
+    fs::copy(config_src_path, config_dest_path)
+        .expect("Failed to copy configuration file");
+
+    // Create the db.kv directory if it does not exist.
+    let db_dir = Path::new("db.kv");
+    if !db_dir.exists() {
+        fs::create_dir(db_dir).expect("Failed to create db.kv directory");
+    }
+}
 
 // A utility function to start the kvapp server.
 // Returns a Child process handle, which can be used to kill the server later.
@@ -25,6 +49,9 @@ fn stop_kvapp_server(mut child: Child) {
 // Example of an integration test that starts the server, makes a request, and stops the server.
 #[tokio::test]
 async fn test_kvapp_integration() {
+    // Prepare server environment
+    prepare_environment();
+
     // Start the server in the background.
     let server_process = start_kvapp_server();
 
