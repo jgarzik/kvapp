@@ -1,3 +1,13 @@
+//
+// src/main.rs -- HTTP API server for [insert your project here]
+//
+// Copyright (c) 2024 Jeff Garzik
+//
+// This file is part of the pcgtoolssoftware project covered under
+// the MIT License.  For the full license text, please see the LICENSE
+// file in the root directory of this project.
+// SPDX-License-Identifier: MIT
+
 #[macro_use]
 extern crate actix_web;
 extern crate clap;
