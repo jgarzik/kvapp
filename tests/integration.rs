@@ -1,9 +1,12 @@
+use serde_json::Value;
 use std::env;
 use std::fs;
 use std::path::Path;
 use std::process::{Child, Command};
 use std::thread;
 use std::time::Duration;
+
+const DEF_START_WAIT: u64 = 4;
 
 // A utility function to prepare the environment before starting the server.
 fn prepare_environment() {
@@ -35,7 +38,7 @@ fn start_kvapp_server() -> Child {
         .expect("Failed to start kvapp server");
 
     // Give the server some time to start up.
-    thread::sleep(Duration::from_secs(5));
+    thread::sleep(Duration::from_secs(DEF_START_WAIT));
 
     child
 }
@@ -65,7 +68,9 @@ async fn test_kvapp_integration() {
 
     assert!(res.status().is_success(), "Request did not succeed");
 
-    // Additional assertions can be made here based on the response.
+    // Deserialize the response body to a JSON Value and assert "healthy" is true.
+    let json: Value = res.json().await.expect("Failed to deserialize JSON");
+    assert_eq!(json["healthy"], true, "Server is not healthy");
 
     // Stop the server.
     stop_kvapp_server(server_process);
