@@ -1,34 +1,33 @@
-FROM rust:1.61 as build
+# Build Stage
+FROM rust:1.76 as builder
 
-RUN apt-get update && apt-get -y install protobuf-compiler
+# Create a new empty shell project
+RUN USER=root cargo new --bin kvapp
+WORKDIR /kvapp
 
-# create a new empty shell project
-RUN USER=root mkdir -p /usr/src && cd /usr/src && cargo new --bin kvapp
-WORKDIR /usr/src/kvapp
-
-# copy over your manifests
+# Copy our manifests
 COPY ./Cargo.lock ./Cargo.lock
 COPY ./Cargo.toml ./Cargo.toml
-RUN cp src/main.rs src/tester.rs
 
-# this build step will cache your dependencies
-RUN cargo update && cargo fetch
+# This step caches our dependencies
 RUN cargo build --release
 RUN rm src/*.rs
 
-# copy your source tree
+# Now that the dependencies are built, copy your source code
 COPY ./src ./src
 
-# build for release
-RUN rm ./target/release/deps/kvapp* ./target/release/deps/tester*
+# Build for release.
+RUN rm ./target/release/deps/kvapp*
 RUN cargo build --release
-RUN cargo install --path .
 
-# our final base
-#FROM rust:1.49
+# Final Stage
+FROM debian:bookworm-slim
 
-# copy the build artifact from the build stage
-#COPY --from=build /kvapp/target/release/kvapp .
+# Copy the build artifact from the build stage
+COPY --from=builder /kvapp/target/release/kvapp .
 
-# set the startup command to run your binary
-CMD ["kvapp"]
+# Set the binary as the entrypoint of the container
+ENTRYPOINT ["./kvapp"]
+
+# Your application listens on port 8080.
+EXPOSE 8080
