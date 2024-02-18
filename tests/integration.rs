@@ -16,8 +16,7 @@ fn prepare_environment() {
     let config_dest_path = Path::new("cfg-kvapp.json");
 
     // Copy the configuration file to the current directory.
-    fs::copy(config_src_path, config_dest_path)
-        .expect("Failed to copy configuration file");
+    fs::copy(config_src_path, config_dest_path).expect("Failed to copy configuration file");
 
     // Create the db.kv directory if it does not exist.
     let db_dir = Path::new("db.kv");
