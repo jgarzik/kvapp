@@ -1,6 +1,6 @@
 [package]
 name = "kvapp"
-version = "1.4.0"
+version = "1.4.1"
 authors = ["Jeff Garzik"]
 edition = "2021"
 description = "Simple API database service for NoSQL key/value database"
