@@ -121,6 +121,7 @@ async fn req_index(m_state: web::Data<Arc<Mutex<ServerState>>>) -> HttpResponse 
 async fn req_health(m_state: web::Data<Arc<Mutex<ServerState>>>) -> HttpResponse {
     let state = m_state.lock().unwrap();
 
+    // query sled db for size-on-disk
     match state.db.size_on_disk() {
         Err(_e) => err_500(),
         Ok(_size) => ok_json(json!({ "healthy": true, })),
@@ -134,6 +135,7 @@ async fn req_delete(
 ) -> HttpResponse {
     let state = m_state.lock().unwrap();
 
+    // remove record from sled db
     match state.db.remove(path.clone()) {
         Ok(optval) => match optval {
             Some(_val) => ok_json(json!({"result": true})),
@@ -150,6 +152,7 @@ async fn req_get(
 ) -> HttpResponse {
     let state = m_state.lock().unwrap();
 
+    // query record from sled db
     match state.db.get(path.clone()) {
         Ok(optval) => match optval {
             Some(val) => ok_binary(val.to_vec()),
@@ -159,13 +162,14 @@ async fn req_get(
     }
 }
 
-/// PUT data item.  key and value both in URI path.
+/// PUT data item.  key in URI path, value in body
 async fn req_put(
     m_state: web::Data<Arc<Mutex<ServerState>>>,
     (path, body): (web::Path<String>, web::Bytes),
 ) -> HttpResponse {
     let state = m_state.lock().unwrap();
 
+    // insert record into sled db
     match state.db.insert(path.as_str(), body.to_vec()) {
         Ok(_optval) => ok_json(json!({"result": true})),
         Err(_e) => err_500(), // db: error
@@ -174,6 +178,7 @@ async fn req_put(
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // enable per-request logging via env_logger + middleware
     env::set_var("RUST_LOG", "actix_web=debug");
     env_logger::init();
 
