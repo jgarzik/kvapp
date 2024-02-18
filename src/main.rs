@@ -15,9 +15,26 @@ use std::{env, fs};
 
 use actix_web::http::StatusCode;
 use actix_web::{middleware, web, App, HttpResponse, HttpServer};
+use clap::Parser;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 use sled::Db;
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// JSON configuration file
+    #[arg(short, long, default_value = DEF_CFG_FN)]
+    config: String,
+
+    /// Bind TCP/IP socket to ADDRESS
+    #[arg(short, long, default_value = DEF_BIND_ADDR)]
+    address: String,
+
+    /// Bind TCP/IP socket to PORT
+    #[arg(short, long, default_value = DEF_BIND_PORT, value_parser = clap::value_parser!(u16).range(1..))]
+    port: u16,
+}
 
 #[derive(Serialize, Deserialize)]
 struct DbConfig {
@@ -165,47 +182,15 @@ async fn main() -> std::io::Result<()> {
     env::set_var("RUST_LOG", "actix_web=debug");
     env_logger::init();
 
-    // parse command line
-    let cli_matches = clap::Command::new(APPNAME)
-        .about("Database server for key/value db")
-        .version(VERSION)
-        .author("Jeff Garzik <jgarzik@pobox.com>")
-        .arg(
-            clap::Arg::new("config")
-                .short('c')
-                .long("config")
-                .help("Sets a custom configuration file")
-                .default_value(DEF_CFG_FN)
-                .value_name("JSON-FILE")
-                .takes_value(true),
-        )
-        .arg(
-            clap::Arg::new("bind-addr")
-                .long("bind-addr")
-                .help("Custom server socket bind address")
-                .default_value(DEF_BIND_ADDR)
-                .value_name("IP-ADDRESS")
-                .takes_value(true),
-        )
-        .arg(
-            clap::Arg::new("bind-port")
-                .long("bind-port")
-                .help("Custom server socket bind port")
-                .default_value(DEF_BIND_PORT)
-                .value_name("PORT")
-                .takes_value(true),
-        )
-        .get_matches();
+    // parse command line arguments
+    let args = Args::parse();
 
     // configure based on CLI options
-    let bind_addr = cli_matches.value_of("bind-addr").unwrap_or(DEF_BIND_ADDR);
-    let bind_port = cli_matches.value_of("bind-port").unwrap_or(DEF_BIND_PORT);
-    let bind_pair = format!("{}:{}", bind_addr, bind_port);
+    let bind_pair = format!("{}:{}", args.address, args.port);
     let server_hdr = format!("{}/{}", APPNAME, VERSION);
 
     // read JSON configuration file
-    let cfg_fn = cli_matches.value_of("config").unwrap_or(DEF_CFG_FN);
-    let cfg_text = fs::read_to_string(cfg_fn)?;
+    let cfg_text = fs::read_to_string(args.config)?;
     let server_cfg: ServerConfig = serde_json::from_str(&cfg_text)?;
 
     // special case, until we have multiple dbs: find first db config, use it
