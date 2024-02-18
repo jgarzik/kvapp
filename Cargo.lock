@@ -933,7 +933,7 @@ dependencies = [
 
 [[package]]
 name = "kvapp"
-version = "1.2.2"
+version = "1.4.0"
 dependencies = [
  "actix-web",
  "bytes 0.4.12",
