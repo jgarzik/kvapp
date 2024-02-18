@@ -1,9 +1,11 @@
 # kvapp
-Simple database service for NoSQL key/value database
+A fully built-in, production-ready skeleton of a Rust microservice API.
+
+The example microservice:  A simple database service for NoSQL key/value database.
 
 ## Motivation
 
-Create a simple fork-and-go Rust template for a multi-threaded HTTP REST
+Create a production-ready clone-and-go Rust template for a multi-threaded HTTP REST
 microservice, that is fully wired for familiar production artifacts such
 as Github Actions testing and docker container builds.
 
@@ -24,13 +26,13 @@ options are also available.
 
 See `example-cfg-kvapp.json` for an example configuration file.
 
-#### databases section
+#### database section
 
-The databases section contains a list of objects, each of which
+The database section contains an object which
 describes a database to configure and expose via this API service.
 
 Specify a short name, local path and other db attributes to configure
-each database.
+the database.
 
 * **name**:  Short URI-compatible name, exposed via API at database
   name.
@@ -43,6 +45,13 @@ to view available options:
 
 ```
 $ cargo run -- --help
+```
+
+## Testing
+
+End-to-end integration testing is performed in the usual cargo way:
+```
+$ cargo test
 ```
 
 ## Server API
@@ -116,10 +125,4 @@ Returns JSON describing value found and removed (if in db):
 {"result":true}
 ```
 
-## Testing
-
-End-to-end integration testing is performed in the usual cargo way:
-```
-$ cargo test
-```
 
