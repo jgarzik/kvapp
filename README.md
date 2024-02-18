@@ -9,6 +9,17 @@ Create a production-ready clone-and-go Rust template for a multi-threaded HTTP R
 microservice, that is fully wired for familiar production artifacts such
 as Github Actions testing and docker container builds.
 
+## Features
+
+* Uses the latest actix, tokio libraries
+* Multi-threaded
+* Includes end-to-end integration test framework
+* HTTP request logging
+* Configuration via JSON config file, or CLI
+* Server Info and Health Check API meta-endpoints
+* Docker-ized
+* Integrated with GitHub CI
+
 ## Using kvapp
 
 Standard rust cargo binary setup:
