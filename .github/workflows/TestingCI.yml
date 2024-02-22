@@ -8,11 +8,15 @@ env:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-homebrew]
 
     steps:
     - uses: actions/checkout@v3
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --release --verbose
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --release --verbose
